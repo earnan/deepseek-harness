@@ -39,3 +39,18 @@ apps/web/dist/
 worktrees/
 .agents/worktrees/
 .typert-*/
+
+# === 本地运维 / 运行时噪声 ===
+data/
+.workbuddy/
+dsh-manager/
+dist.bak-*
+dist.bak.*
+_tmp_*
+nul
+dsh-web-app*.bat
+dsh-web-stop.bat
+dsh-tui.cmd
+dsh-web.cmd
+scripts/Repair-*
+test-dsh-*.bat

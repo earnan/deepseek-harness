@@ -1,0 +1,68 @@
+diff --git a/docs/postmortem/README.i18n.yaml b/docs/postmortem/README.i18n.yaml
+index 759cbbad91..d86ae37c85 100644
+--- a/docs/postmortem/README.i18n.yaml
++++ b/docs/postmortem/README.i18n.yaml
+@@ -2,5 +2,5 @@
+ # side as of the last confirmed-consistent state. Both languages carry equal authority;
+ # after editing either side, bring the other along and re-record with:
+ #   pnpm run verify-translation-pairing --write docs/postmortem/README.md
+-README.md: ffde0057304856b7c7718e3dd1f4743c48ee193f
+-README.zh.md: 4b3f8588cc1f6e162c72a5b6a78b996638baf7ae
++README.md: 3f0afa3ec56c5190458f7d257a85055f3a70419d
++README.zh.md: 48d4f8039bc084002808812e2eb03b4d17a2a94c
+diff --git a/docs/postmortem/README.md b/docs/postmortem/README.md
+index ffde005730..3f0afa3ec5 100644
+--- a/docs/postmortem/README.md
++++ b/docs/postmortem/README.md
+@@ -16,3 +16,4 @@ Every post-mortem opens with an **Executive summary**: one short paragraph a bus
+ | [0002](0002-js-expression-disabled-filesystem-tools.md) | Filesystem snapshot tools were permanently disabled by a literal `!!js` object |
+ | [0003](0003-web-agent-gui-feedback-loop.md) | Web agent validated a replacement server instead of the GUI hosting its session |
+ | [0004](0004-landlock-partial-notice-misclassified-child-failures.md) | Landlock partial-enforcement notice misclassified child failures |
++| [0005](0005-windows-subprocess-console-flash.md) | Windows subprocess consoles flashed from the no-console Web host |
+diff --git a/docs/postmortem/README.zh.md b/docs/postmortem/README.zh.md
+index 4b3f8588cc..48d4f8039b 100644
+--- a/docs/postmortem/README.zh.md
++++ b/docs/postmortem/README.zh.md
+@@ -16,3 +16,4 @@
+ | [0002](0002-js-expression-disabled-filesystem-tools.zh.md) | 文件系统快照工具被一个字面量 `!!js` 对象永久禁用 |
+ | [0003](0003-web-agent-gui-feedback-loop.zh.md) | Web agent（智能体）验证了替代服务器，而非承载其会话的 GUI |
+ | [0004](0004-landlock-partial-notice-misclassified-child-failures.zh.md) | Landlock 部分强制执行通知导致子进程失败被误归类 |
++| [0005](0005-windows-subprocess-console-flash.zh.md) | 无控制台 Web 宿主启动的 Windows 子进程发生闪窗 |
+diff --git a/packages/subprocess/subprocess-local/README.i18n.yaml b/packages/subprocess/subprocess-local/README.i18n.yaml
+index f8f2fd603c..24559733c7 100644
+--- a/packages/subprocess/subprocess-local/README.i18n.yaml
++++ b/packages/subprocess/subprocess-local/README.i18n.yaml
+@@ -2,5 +2,5 @@
+ # side as of the last confirmed-consistent state. Both languages carry equal authority;
+ # after editing either side, bring the other along and re-record with:
+ #   pnpm run verify-translation-pairing --write packages/subprocess/subprocess-local/README.md
+-README.md: 5e609bf96002c62d18684517bcd815e6f4fc0bb0
+-README.zh.md: 9e53c9f9444c0c19ed4ec337357a9151d8f90328
++README.md: ce32101390cd7bbee39bf0508280af4147d6086c
++README.zh.md: 2265a782aef53ff284fab889bd883bd7a3a67753
+diff --git a/packages/subprocess/subprocess-local/README.md b/packages/subprocess/subprocess-local/README.md
+index 5e609bf960..ce32101390 100644
+--- a/packages/subprocess/subprocess-local/README.md
++++ b/packages/subprocess/subprocess-local/README.md
+@@ -68,7 +68,7 @@ This section explains the design decisions behind the provider and points at the
+ 
+ ### Design concept
+ 
+-The provider treats the process tree as the unit of lifetime. POSIX children spawn detached (their own process group) so the whole tree is signalled by negative group id with a direct-child fallback; Windows terminates by root pid through `taskkill /T`. Signalling, escalation, and teardown guard on tree liveness rather than direct-child settlement, so a TERM-trapping helper cannot outlive the handle unnoticed.
++The provider treats the process tree as the unit of lifetime. POSIX children spawn detached (their own process group) so the whole tree is signalled by negative group id with a direct-child fallback; Windows terminates by root pid through `taskkill /T`. Windows ordinary children hide their console window so a GUI or no-console host does not flash a shell window. Window hiding does not change the spec's stdio dispositions. Signalling, escalation, and teardown guard on tree liveness rather than direct-child settlement, so a TERM-trapping helper cannot outlive the handle unnoticed.
+ 
+ ### Source map
+ 
+diff --git a/packages/subprocess/subprocess-local/README.zh.md b/packages/subprocess/subprocess-local/README.zh.md
+index 9e53c9f944..2265a782ae 100644
+--- a/packages/subprocess/subprocess-local/README.zh.md
++++ b/packages/subprocess/subprocess-local/README.zh.md
+@@ -68,7 +68,7 @@ kind: "package-reference"
+ 
+ ### 设计理念
+ 
+-本提供方把进程树视为生命周期单元。POSIX 子进程以 detached 方式 spawn（拥有独立进程组），因此整棵进程树以负进程组 id 发送信号，并以直接子进程作为回退；Windows 通过 `taskkill /T` 按根 pid 终止。信号发送、升级与拆卸都以进程树存活状态为守卫，而非以直接子进程结算为准，因此拦截 TERM 的辅助进程无法在无人察觉的情况下比句柄更长寿。
++本提供方把进程树视为生命周期单元。POSIX 子进程以 detached 方式 spawn（拥有独立进程组），因此整棵进程树以负进程组 id 发送信号，并以直接子进程作为回退；Windows 通过 `taskkill /T` 按根 pid 终止。Windows 普通子进程会隐藏其控制台窗口，使 GUI 或无控制台宿主不会闪出 shell 窗口。窗口隐藏不改变规范的 stdio 处置。信号发送、升级与拆卸都以进程树存活状态为守卫，而非以直接子进程结算为准，因此拦截 TERM 的辅助进程无法在无人察觉的情况下比句柄更长寿。
+ 
+ ### 源码地图
+ 

@@ -1,0 +1,82 @@
+diff --git a/packages/subprocess/subprocess-local/src/spawn.ts b/packages/subprocess/subprocess-local/src/spawn.ts
+index 433ba01791..db9e8f0d8d 100644
+--- a/packages/subprocess/subprocess-local/src/spawn.ts
++++ b/packages/subprocess/subprocess-local/src/spawn.ts
+@@ -7,7 +7,7 @@
+  * @module dsh-subprocess-local/spawn
+  */
+ 
+-import { type ChildProcess, spawn, spawnSync } from 'node:child_process'
++import { type ChildProcess, type SpawnOptions, spawn, spawnSync } from 'node:child_process'
+ import type { Readable } from 'node:stream'
+ import { randomBytes } from 'node:crypto'
+ import { closeSync, mkdtempSync, openSync, unlinkSync, writeSync } from 'node:fs'
+@@ -48,6 +48,8 @@ export function childEnv(extra?: Readonly<NodeJS.ProcessEnv>): NodeJS.ProcessEnv
+ 
+ /** Injectable knobs so tests can exercise spill and platform behavior deterministically. */
+ export interface SpawnInternals {
++  /** Ordinary-process spawn implementation (defaults to Node's `spawn`). */
++  childSpawn?: (program: string, args: readonly string[], options: SpawnOptions) => ChildProcess
+   /** Directory for spill files (defaults to the OS temp dir). */
+   spillDir?: string
+   /** Windows tree-termination runner (defaults to `taskkill /PID <pid> /T /F`). */
+@@ -329,6 +331,7 @@ export function spawnSubprocess(spec: SubprocessSpawnSpec, internals: SpawnInter
+   }
+   const spillDir = internals.spillDir ?? privateSpillDir()
+   const platform = internals.platform ?? process.platform
++  const childSpawn = internals.childSpawn ?? spawn
+   const taskkill = internals.taskkill ?? taskkillProcessTree
+   const linuxGroupHasLiveMembers = internals.linuxProcessGroupHasLiveMembers ?? linuxProcessGroupHasLiveMembers
+ 
+@@ -347,7 +350,7 @@ export function spawnSubprocess(spec: SubprocessSpawnSpec, internals: SpawnInter
+   const stdinMode = spec.stdio.stdin
+ 
+   const env = childEnv(spec.env)
+-  const child = spawn(program, args, {
++  const child = childSpawn(program, args, {
+     cwd: spec.cwd,
+     env,
+     stdio: [
+@@ -358,6 +361,9 @@ export function spawnSubprocess(spec: SubprocessSpawnSpec, internals: SpawnInter
+     // `detached` gives teardown a tree root on POSIX (its own process group);
+     // Windows terminates by root pid through taskkill /T instead.
+     detached: platform !== 'win32',
++    // A host without a console would otherwise let Windows allocate a visible
++    // window for console-subsystem children such as bash.exe and powershell.exe.
++    windowsHide: platform === 'win32',
+   })
+ 
+   const collectStream = (mode: SubprocessOutputMode, stream: Readable | null, label: string): OutputCollector | undefined => {
+diff --git a/packages/subprocess/subprocess-local/tests/spawn.spec.ts b/packages/subprocess/subprocess-local/tests/spawn.spec.ts
+index 1f21dfaaa1..3cb5ce2ce5 100644
+--- a/packages/subprocess/subprocess-local/tests/spawn.spec.ts
++++ b/packages/subprocess/subprocess-local/tests/spawn.spec.ts
+@@ -1,4 +1,5 @@
+ import { mkdtempSync, readFileSync, statSync, unlinkSync } from 'node:fs'
++import { spawn } from 'node:child_process'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { describe, expect, it, vi } from 'vitest'
+@@ -162,6 +163,22 @@ async function waitForPidFile(path: string, timeoutMs = 5_000): Promise<number>
+ }
+ 
+ describe('spawnSubprocess', () => {
++  it.each([
++    ['win32', true],
++    ['linux', false],
++  ] as const)('sets windowsHide for %s ordinary children', async (platform, expected) => {
++    let windowsHide: boolean | undefined
++    const running = spawnSubprocess(spec('true'), {
++      platform,
++      childSpawn(program, args, options) {
++        windowsHide = options.windowsHide
++        return spawn(program, args, options)
++      },
++    })
++    await running.done
++    expect(windowsHide).toBe(expected)
++  })
++
+   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY, MAX_TIMER_DELAY_MS + 1])(
+     'rejects an invalid grace before spawning: %s',
+     (graceMs) => {
