@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-24-hide-windows-ordinary-subprocess-consoles.md
+2026-08-24-hide-windows-ordinary-subprocess-consoles.md: 1e7fc98bd363a981d3779368e3df01810b5768cb
+2026-08-24-hide-windows-ordinary-subprocess-consoles.zh.md: 820bf790aaedd692aa173a5cf9955c491a178a57
